@@ -1,24 +1,29 @@
-data class Position4(val row: Int, val col: Int)
+package day04
 
-enum class Direction4(val direction: Position4) {
-    UP(Position4(0, -1)),
-    DOWN(Position4(0, 1)),
-    LEFT(Position4(-1, 0)),
-    RIGHT(Position4(1, 0)),
-    UP_LEFT(Position4(-1, -1)),
-    UP_RIGHT(Position4(1, -1)),
-    DOWN_LEFT(Position4(-1, 1)),
-    DOWN_RIGHT(Position4(1, 1));
+import println
+import readInput
 
-    fun flip(): Direction4 = entries.first { it.direction == Position4(-direction.row, -direction.col) }
+data class Position(val row: Int, val col: Int)
+
+enum class Direction(val direction: Position) {
+    UP(Position(0, -1)),
+    DOWN(Position(0, 1)),
+    LEFT(Position(-1, 0)),
+    RIGHT(Position(1, 0)),
+    UP_LEFT(Position(-1, -1)),
+    UP_RIGHT(Position(1, -1)),
+    DOWN_LEFT(Position(-1, 1)),
+    DOWN_RIGHT(Position(1, 1));
+
+    fun flip(): Direction = entries.first { it.direction == Position(-direction.row, -direction.col) }
 }
 
-val diagonalDirections = listOf(Direction4.UP_LEFT, Direction4.UP_RIGHT, Direction4.DOWN_LEFT, Direction4.DOWN_RIGHT)
+val diagonalDirections = listOf(Direction.UP_LEFT, Direction.UP_RIGHT, Direction.DOWN_LEFT, Direction.DOWN_RIGHT)
 
 fun main() {
     val xmas = "XMAS"
 
-    fun checkInDirection(input: List<String>, searchString: String, from: Position4, direction: Direction4): Boolean {
+    fun checkInDirection(input: List<String>, searchString: String, from: Position, direction: Direction): Boolean {
         searchString.forEachIndexed { index, character ->
             val row = from.row + index * direction.direction.row
             val column = from.col + index * direction.direction.col
@@ -41,8 +46,8 @@ fun main() {
         var count = 0
         for (row in input.indices) {
             for (column in input[row].indices) {
-                for (direction in Direction4.entries) {
-                    if (checkInDirection(input, xmas, Position4(row, column), direction)) {
+                for (direction in Direction.entries) {
+                    if (checkInDirection(input, xmas, Position(row, column), direction)) {
                         count++
                     }
                 }
@@ -51,8 +56,8 @@ fun main() {
         return count
     }
 
-    fun getSurroundingDirectionsFor(input: List<String>, position: Position4, searchChar: Char): Set<Direction4> {
-        val result = mutableSetOf<Direction4>()
+    fun getSurroundingDirectionsFor(input: List<String>, position: Position, searchChar: Char): Set<Direction> {
+        val result = mutableSetOf<Direction>()
         diagonalDirections.forEach { direction ->
             val row = position.row + direction.direction.row
             val column = position.col + direction.direction.col
@@ -78,11 +83,11 @@ fun main() {
                 if (input[row][column] != 'A') {
                     continue
                 }
-                val mDirections = getSurroundingDirectionsFor(input, Position4(row, column), 'M')
+                val mDirections = getSurroundingDirectionsFor(input, Position(row, column), 'M')
                 if (mDirections.size != 2 || mDirections.first().flip() == mDirections.last()) {
                     continue
                 }
-                if (getSurroundingDirectionsFor(input, Position4(row, column), 'S') ==
+                if (getSurroundingDirectionsFor(input, Position(row, column), 'S') ==
                     mDirections.map { it.flip() }.toSet()
                 ) {
                     count++
