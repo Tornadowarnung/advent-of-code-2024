@@ -1,9 +1,9 @@
 data class Position6(val x: Int, val y: Int) {
     operator fun plus(other: Position6) = Position6(x + other.x, y + other.y)
-    operator fun plus(other: Direction6) = this + other.position
+    operator fun plus(other: GuardDirection) = this + other.position
 }
 
-enum class Direction6(val position: Position6) {
+enum class GuardDirection(val position: Position6) {
     UP(Position6(0, -1)),
     DOWN(Position6(0, 1)),
     LEFT(Position6(-1, 0)),
@@ -11,14 +11,15 @@ enum class Direction6(val position: Position6) {
 }
 
 fun main() {
-    data class Guard(var position: Position6, private var direction: Direction6) {
+    data class Guard(var position: Position6, private var direction: GuardDirection) {
+        fun getDirection() = direction
         fun getNextPosition() = position + direction
         fun turnRight() {
             direction = when (direction) {
-                Direction6.UP -> Direction6.RIGHT
-                Direction6.DOWN -> Direction6.LEFT
-                Direction6.LEFT -> Direction6.UP
-                Direction6.RIGHT -> Direction6.DOWN
+                GuardDirection.UP -> GuardDirection.RIGHT
+                GuardDirection.DOWN -> GuardDirection.LEFT
+                GuardDirection.LEFT -> GuardDirection.UP
+                GuardDirection.RIGHT -> GuardDirection.DOWN
             }
         }
 
@@ -29,11 +30,14 @@ fun main() {
 
     data class Obstacle(val position: Position6)
 
-    fun part1(input: List<String>): Int {
-        // parse positions
-        val obstacles = mutableListOf<Obstacle>()
-        var eventualGuard: Guard? = null
-        var eventualMaxPosition: Position6? = null
+    data class ParsedMap(val guard: Guard, val obstacles: Set<Obstacle>, val maxPosition: Position6)
+
+    data class VisitedPoint(val position: Position6, val direction: GuardDirection)
+
+    fun parseMap(input: List<String>): ParsedMap {
+        var guard: Guard? = null
+        var maxPosition: Position6? = null
+        val obstacles: MutableSet<Obstacle> = mutableSetOf()
 
         input.forEachIndexed { y, string ->
             string.forEachIndexed { x, character ->
@@ -41,35 +45,56 @@ fun main() {
                     obstacles.add(Obstacle(Position6(x, y)))
                 }
                 if (character == '^') {
-                    eventualGuard = Guard(Position6(x, y), Direction6.UP)
+                    guard = Guard(Position6(x, y), GuardDirection.UP)
                 }
-                eventualMaxPosition = Position6(x, y)
+                maxPosition = Position6(x, y)
             }
         }
 
-        // simulate movement
-        val visited = mutableSetOf<Position6>()
-        val guard = eventualGuard!!
-        val maxPosition = eventualMaxPosition!!
-        while (guard.position.x < maxPosition.x && guard.position.y < maxPosition.y) {
-            if (obstacles.any { obstacle -> obstacle.position == guard.getNextPosition() }) {
+        if (guard == null) {
+            throw IllegalStateException("Could not find guard or maxPosition")
+        }
+
+        return ParsedMap(guard!!, obstacles, maxPosition!!)
+    }
+
+    fun simulateMovement(
+        map: ParsedMap,
+        guard: Guard,
+    ): MutableSet<VisitedPoint> {
+        val visited = mutableSetOf<VisitedPoint>()
+        while (guard.position.x < map.maxPosition.x && guard.position.y < map.maxPosition.y) {
+            if (map.obstacles.any { obstacle -> obstacle.position == guard.getNextPosition() }) {
                 guard.turnRight()
             } else {
-                visited.add(guard.position)
+                visited.add(VisitedPoint(guard.position, guard.getDirection()))
                 guard.walkForward()
             }
         }
-        visited.add(guard.position)
-        return visited.size
+        visited.add(VisitedPoint(guard.position, guard.getDirection()))
+        return visited
+    }
+
+    fun part1(input: List<String>): Int {
+        val map = parseMap(input)
+
+        // simulate movement
+        val guard = map.guard
+        val visited = simulateMovement(map, guard)
+        return visited.map { it.position }.toSet().size
     }
 
     fun part2(input: List<String>): Int {
+        val map = parseMap(input)
+
+
+
         return -1
     }
 
     val testInput = readInput("Day06_test")
     check(part1(testInput) == 41)
-//    check(part2(testInput) == 123)
+//    check(part2(testInput) == 6)
 
     val input = readInput("Day06")
     part1(input).println()
