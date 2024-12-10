@@ -37,9 +37,9 @@ fun main() {
         return antennas.flatMap { a ->
             antennas.flatMap { b ->
                 if (a == b) return@flatMap emptySet()
-                val aToB = b.position - a.position
-                val bToA = a.position - b.position
-                setOf(b.position - bToA, a.position - aToB)
+                val bToA = b.position - a.position
+                val aToB = a.position - b.position
+                setOf(b.position - aToB, a.position - bToA)
             }.toSet()
         }.toSet().filter {
             it.isBetween(limits.min, limits.max)
@@ -51,21 +51,21 @@ fun main() {
             antennas.flatMap { b ->
                 if (a == b) return@flatMap emptySet()
                 val returnSet = mutableSetOf<Position>()
-                val bToA = b.position - a.position
-                val aToB = a.position - b.position
-                var currentPosition = b.position - aToB
+                val aToB = b.position - a.position
+                val bToA = a.position - b.position
+                var currentPosition = b.position + bToA
                 var currentIteration = 1
                 while (currentPosition.isBetween(limits.min, limits.max)) {
                     returnSet.add(currentPosition)
                     currentIteration++
-                    currentPosition = b.position - currentIteration * aToB
+                    currentPosition = b.position + (currentIteration * bToA)
                 }
-                currentPosition = a.position - bToA
+                currentPosition = a.position + aToB
                 currentIteration = 1
                 while (currentPosition.isBetween(limits.min, limits.max)) {
                     returnSet.add(currentPosition)
                     currentIteration++
-                    currentPosition = a.position - currentIteration * bToA
+                    currentPosition = a.position + (currentIteration * aToB)
                 }
                 returnSet
             }.toSet()
@@ -99,9 +99,6 @@ fun main() {
             line.setCharAt(it.x, '#')
             checkList[it.y] = line.toString()
         }
-
-        println(checkList.joinToString("\n"))
-        println(allAntinodes.size)
 
         return allAntinodes.size
     }
