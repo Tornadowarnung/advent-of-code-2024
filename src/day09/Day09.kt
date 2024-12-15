@@ -48,8 +48,11 @@ fun List<DiskMapEntry>.toBlockedDiskmap(): List<BlockedDiskMapEntry> {
 }
 
 fun List<DiskMapEntry>.calculateCheckSum() =
-    this.filterIsInstance<DiskMapEntry.File>().mapIndexed { index, diskMapEntry ->
-        index.toLong() * diskMapEntry.id.toLong()
+    this.mapIndexed { index, diskMapEntry ->
+        when(diskMapEntry) {
+            is DiskMapEntry.File -> index.toLong() * diskMapEntry.id.toLong()
+            DiskMapEntry.Free -> 0
+        }
     }.sum()
 
 sealed class BlockedDiskMapEntry(open val size: Int = 1) {
@@ -132,27 +135,28 @@ fun main() {
     fun part2(input: List<String>): Long {
         var blockedDiskMap = parseDiskMap(input).toBlockedDiskmap().toMutableList()
 
-        while (!blockedDiskMap.isBlockedDiskMapCompact()) {
-            val swappableFileIndex = blockedDiskMap.indexOfLast { entry ->
-                val firstIndexOfFreeInBlockedDiskMap = blockedDiskMap.firstIndexOfFreeInBlockedDiskMap(entry.size)
-                entry is BlockedDiskMapEntry.File && firstIndexOfFreeInBlockedDiskMap != -1 &&
-                        firstIndexOfFreeInBlockedDiskMap < blockedDiskMap.indexOf(entry)
-            }
-            val swappableFile = blockedDiskMap[swappableFileIndex]
-            val swappableFreeIndex = blockedDiskMap.firstIndexOfFreeInBlockedDiskMap(swappableFile.size)
+        val files = blockedDiskMap.filterIsInstance<BlockedDiskMapEntry.File>().sortedBy { -it.id }
+
+        for(file in files) {
+            val swappableFreeIndex = blockedDiskMap.firstIndexOfFreeInBlockedDiskMap(file.size)
+            if (swappableFreeIndex == -1) continue
             val swappableFree = blockedDiskMap[swappableFreeIndex]
 
-            val inPlaceOfFree = if (swappableFree.size > swappableFile.size) {
-                listOf(swappableFile, BlockedDiskMapEntry.Free(swappableFree.size - swappableFile.size))
+            val fileIndex = blockedDiskMap.indexOf(file)
+
+            if(fileIndex < swappableFreeIndex) continue
+
+            val inPlaceOfFree = if (swappableFree.size > file.size) {
+                listOf(file, BlockedDiskMapEntry.Free(swappableFree.size - file.size))
             } else {
-                listOf(swappableFile)
+                listOf(file)
             }
 
-            val inPlaceOfFile = BlockedDiskMapEntry.Free(swappableFile.size)
+            val inPlaceOfFile = BlockedDiskMapEntry.Free(file.size)
 
             blockedDiskMap = (blockedDiskMap.subList(0, swappableFreeIndex) + inPlaceOfFree +
-                    blockedDiskMap.subList(swappableFreeIndex + 1, swappableFileIndex) + inPlaceOfFile +
-                    blockedDiskMap.subList(swappableFileIndex + 1, blockedDiskMap.size)).toMutableList()
+                    blockedDiskMap.subList(swappableFreeIndex + 1, fileIndex) + inPlaceOfFile +
+                    blockedDiskMap.subList(fileIndex + 1, blockedDiskMap.size)).toMutableList()
 
             blockedDiskMap = blockedDiskMap.mergeFreeItems()
         }
