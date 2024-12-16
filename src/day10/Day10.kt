@@ -54,13 +54,47 @@ fun main() {
         return result.sum()
     }
 
+    fun findPossiblePath(map: List<String>, position: Position): Int {
+        if (map[position.y][position.x] == '9') return 1
+        var result = 0
+        val height = map[position.y][position.x].digitToInt()
+        val west = position.getWest()
+        if (isValidPosition(map, west) && map[west.y][west.x] == (height + 1).digitToChar()) {
+            result += findPossiblePath(map, west)
+        }
+        val north = position.getNorth()
+        if (isValidPosition(map, north) && map[north.y][north.x] == (height + 1).digitToChar()) {
+            result += findPossiblePath(map, north)
+        }
+        val south = position.getSouth()
+        if (isValidPosition(map, south) && map[south.y][south.x] == (height + 1).digitToChar()) {
+            result += findPossiblePath(map, south)
+        }
+        val east = position.getEast()
+        if (isValidPosition(map, east) && map[east.y][east.x] == (height + 1).digitToChar()) {
+            result += findPossiblePath(map, east)
+        }
+        return result
+    }
+
     fun part2(input: List<String>): Int {
-        return -1
+        val trailHeads = mutableListOf<Position>()
+        input.forEachIndexed { lineIndex, line ->
+            line.forEachIndexed { rowIndex, character ->
+                if (character == '0') trailHeads.add(Position(rowIndex, lineIndex))
+            }
+        }
+
+        val result = trailHeads.map { position ->
+            findPossiblePath(input, position)
+        }
+
+        return result.sum()
     }
 
     val testInput = readInput("Day10_test")
     check(part1(testInput) == 36)
-//    check(part2(testInput) == 0)
+    check(part2(testInput) == 81)
 
     val input = readInput("Day10")
     println(part1(input))
